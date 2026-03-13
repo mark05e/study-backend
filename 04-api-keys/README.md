@@ -1,24 +1,45 @@
-# 04 — API keys
+# 04 — API Keys
 
 ## Overview
 
-Validate `X-API-Key` or `Authorization: Bearer <key>` (or query param); reject with 401 if missing or invalid. Env var for valid key; optional HMAC for webhooks later.
+Protect one route with a shared secret read from configuration. This is the simplest auth mechanism in the sequence and sets up later signature- and token-based topics.
 
-**Why this order:** Authenticate requests via header/query; HMAC or static key. Simple auth baseline.
+**Why this order:** It adds request authentication without sessions, crypto handshakes, or third-party providers.
 
-**Minimal spec:** One protected route; require valid API key from env; return 401 when missing/invalid.
+## Required contract
 
----
+- Read the valid key from the `API_KEY` environment variable.
+- Expose `GET /protected`.
+- Require the exact header `X-API-Key: <value>`.
+- Return `200` with `{"ok":true}` when the header matches the configured key.
+
+## Acceptance checks
+
+- Missing `X-API-Key` returns `401`.
+- Wrong `X-API-Key` returns `401`.
+- Correct `X-API-Key` returns `200` with `{"ok":true}`.
+
+## Failure cases
+
+- If `API_KEY` is unset, fail clearly at startup or document the fallback in the language-specific README.
+- Do not accept the key in a query string for the baseline contract.
+- Unknown routes return `404`.
+
+## Extensions
+
+- Add bearer-token support as an alternate header format.
+- Protect multiple routes with shared middleware.
+- Return a structured JSON error body.
 
 ## Per-language notes
 
 | Language   | Notes |
 | ---------- | ----- |
-| **Python** | Middleware or dependency that reads header, compares to os.environ. |
-| **JavaScript** | Middleware that checks req.headers['x-api-key'] or Authorization. |
-| **Go** | Middleware that reads header and validates. |
-| **Java** | Filter or interceptor; read from env or config. |
-| **Rust** | Axum/Actix middleware or extractor. |
-| **Zig** | Check header in handler before processing. |
-| **C++** | Middleware or handler that validates header. |
-| **C** | Parse Authorization or X-API-Key and compare. |
+| **Python** | Use middleware or a dependency that reads `os.environ`. |
+| **JavaScript** | Use middleware that checks `req.headers['x-api-key']`. |
+| **Go** | Use middleware around the handler. |
+| **Java** | Use a filter or interceptor backed by config. |
+| **Rust** | Use Axum or Actix middleware/extractors. |
+| **Zig** | Check the header in the handler before processing. |
+| **C++** | Use middleware if the framework supports it, otherwise validate in the handler. |
+| **C** | Parse `X-API-Key` explicitly in your HTTP request handling. |

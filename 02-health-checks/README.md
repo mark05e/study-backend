@@ -1,24 +1,43 @@
-# 02 — Health checks
+# 02 — Health Checks
 
 ## Overview
 
-Add a `/health` (or `/ready`, `/live`) route that returns 200 and optional JSON. Same server as REST; establishes readiness/liveness.
+Add a tiny operational endpoint that lets a caller confirm the service is up. This comes right after REST because it is a small, practical addition to any server.
 
-**Why this order:** `/health` endpoint; trivial add-on to any server. Establishes readiness/liveness.
+**Why this order:** It introduces an operational contract without adding new infrastructure or protocol complexity.
 
-**Minimal spec:** GET `/health` returns 200 and optionally `{"status":"ok"}`.
+## Required contract
 
----
+- Start an HTTP server on a configurable port.
+- `GET /health` returns `200` with the exact JSON body `{"status":"ok"}`.
+- Set `Content-Type: application/json` on the health response.
+- Keep this topic standalone even if you reuse patterns from `01-rest-api`.
+
+## Acceptance checks
+
+- `GET /health` returns `200`.
+- The response body is exactly `{"status":"ok"}`.
+- Repeated requests return the same success response.
+
+## Failure cases
+
+- Unsupported methods on `/health` must not return `200`.
+- Unknown routes return `404`.
+
+## Extensions
+
+- Add separate `/ready` and `/live` endpoints.
+- Include dependency checks in readiness only.
 
 ## Per-language notes
 
 | Language   | Notes |
 | ---------- | ----- |
-| **Python** | Same server as REST; middleware or single route (FastAPI/Flask). |
-| **JavaScript** | Same server as REST; single route (Express/Fastify). |
-| **Go** | net/http with a `/health` handler. |
-| **Java** | Spring Actuator or custom endpoint. |
-| **Rust** | Axum/Actix: one route. |
-| **Zig** | Add route to std.http or zig-http server. |
-| **C++** | Add handler in Drogon/cpp-httplib. |
-| **C** | Add path check in your HTTP parser/handler. |
+| **Python** | Add one route in FastAPI or Flask. |
+| **JavaScript** | Add one route in Express or Fastify. |
+| **Go** | Use `net/http` with a dedicated `/health` handler. |
+| **Java** | Use a custom endpoint or Spring Actuator if you want extras later. |
+| **Rust** | Add one route in Axum or Actix. |
+| **Zig** | Add one route in your HTTP server. |
+| **C++** | Add one handler in Drogon or cpp-httplib. |
+| **C** | Add one path branch in your HTTP handler. |
